@@ -15,7 +15,7 @@ class MatrixFactorizationSGD:
         b_u, b_i are learned biases
     """
 
-    def __init__(self, k=32, lr=0.01, reg=0.05, n_epochs=10, seed=42):
+    def __init__(self, k=64, lr=0.01, reg=0.1, n_epochs=15, seed=42):
         self.k = k
         self.lr = lr
         self.reg = reg
@@ -133,3 +133,4 @@ class MatrixFactorizationSGD:
 
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored[:top_k]
+
