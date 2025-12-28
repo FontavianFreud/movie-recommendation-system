@@ -2,7 +2,7 @@ import random
 import pandas as pd
 
 from src.data.split import leave_last_n_out
-from src.models.mf_sgd import MatrixFactorizationSGD
+from src.models.bpr_mf import BPRMatrixFactorization
 from src.evaluation.metrics import precision_at_k, recall_at_k
 
 
@@ -17,14 +17,24 @@ def main():
 
     train_df, test_df = leave_last_n_out(df, n=5)
 
-    model = MatrixFactorizationSGD(k=64, lr=0.01, reg=0.1, n_epochs=15, seed=42)
-    model.fit(train_df)
+    like_threshold = 4.0
+    model = BPRMatrixFactorization(
+        k=64,
+        lr=0.05,
+        reg=0.01,
+        n_epochs=10,
+        n_samples_per_epoch=150_000,  # adjust if too slow/fast
+        seed=42,
+    )
+    model.fit(train_df, like_threshold=like_threshold)
 
-    # Helper structures
+    # Movies known to the model
     all_movie_ids = set(model.idx_to_item)
+
+    # Already-rated items in train (for exclusion)
     train_by_user = train_df.groupby("user_id")["movie_id"].apply(set).to_dict()
 
-    like_threshold = 4.0
+    # Relevant items in test: liked movies
     test_likes = (
         test_df[test_df["rating"] >= like_threshold]
         .groupby("user_id")["movie_id"]
@@ -41,26 +51,19 @@ def main():
     for u, relevant in test_likes.items():
         already = train_by_user.get(u, set())
 
-        # Pool of movies user has not seen
         unseen = list(all_movie_ids - already - relevant)
         if len(unseen) == 0:
             continue
 
-        # Sample negatives
-        sampled_negatives = random.sample(
-            unseen, min(n_negatives, len(unseen))
-        )
-
-        # Candidate set = positives + negatives
+        sampled_negatives = random.sample(unseen, min(n_negatives, len(unseen)))
         candidates = list(relevant) + sampled_negatives
 
         recs = model.recommend_for_user(
             user_id=u,
             candidate_movie_ids=candidates,
-            already_rated_ids=set(),
+            already_rated_ids=set(),  # candidates already filtered
             top_k=K
         )
-
         recommended_ids = [mid for mid, _ in recs]
 
         precisions.append(precision_at_k(recommended_ids, relevant, K))

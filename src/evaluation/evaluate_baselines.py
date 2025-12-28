@@ -18,6 +18,10 @@ def build_popularity_ranking(train_df, min_ratings=50):
 
 
 def main():
+
+    random.seed(42)
+    np.random.seed(42)
+
     df = pd.read_csv("data/processed/ratings_with_titles.csv")
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
