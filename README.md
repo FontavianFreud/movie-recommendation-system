@@ -110,6 +110,133 @@ This recommends movies frequently liked by users who liked a given seed movie.
 
 
 
+Mini Project 2: 
+
+Project Overview
+
+This project implements and evaluates multiple movie recommendation approaches using the MovieLens 100K dataset. The goal is to understand how different recommendation objectives and evaluation strategies affect real-world top-K recommendation quality.
+
+Starting from exploratory data analysis and simple baselines, the project progresses through explicit-feedback matrix factorization (rating prediction) and culminates in an implicit-feedback, pairwise ranking model optimized directly for recommendation quality.
+
+The project emphasizes correct evaluation, baseline comparisons, and alignment between training objectives and ranking metrics.
+
+Data & Exploratory Analysis
+
+The MovieLens 100K dataset consists of ~100,000 user–movie ratings on a 1–5 scale.
+
+Key findings from EDA:
+
+The user–item interaction matrix is ~94% sparse
+
+Most users rate a limited number of movies (median ≈ 65)
+
+Most movies receive relatively few ratings (long-tail distribution)
+
+Simple global popularity is therefore a strong baseline
+
+These properties motivate the use of collaborative filtering and careful evaluation design.
+
+Evaluation Setup
+
+To ensure realistic recommendation evaluation:
+
+Time-aware split: for each user, the last 5 interactions are held out as test data
+
+Relevant items: movies rated ≥ 4 in the test set
+
+Candidate sampling: evaluation ranks items among:
+
+all relevant test items
+
+200 randomly sampled unseen negatives per user
+
+Metrics:
+
+Precision@10
+
+Recall@10
+
+All evaluation is performed using training data only for model fitting to avoid data leakage. Random seeds are fixed for reproducibility.
+
+Models Implemented
+1. Popularity Baseline
+
+Recommends globally popular movies based on average rating, with a minimum rating-count threshold.
+
+2. Explicit Matrix Factorization (RMSE)
+
+A classic collaborative filtering model trained via stochastic gradient descent to minimize squared rating error:
+
+min
+⁡
+(
+𝑟
+𝑢
+𝑖
+−
+𝑟
+^
+𝑢
+𝑖
+)
+2
+min(r
+ui
+	​
+
+−
+r
+^
+ui
+	​
+
+)
+2
+
+While effective at rating prediction, this objective is not directly aligned with top-K recommendation quality.
+
+3. Implicit Matrix Factorization (BPR)
+
+An implicit-feedback, pairwise ranking model trained to ensure that movies a user liked are ranked above movies they did not interact with.
+
+This model optimizes ranking, not rating accuracy, and is better suited to sparse recommendation settings.
+
+Results
+
+All models were evaluated on the same users and candidate sets.
+
+Model	Users	Precision@10	Recall@10
+Popularity	820	0.0676	0.1987
+MF (RMSE)	820	0.0618	0.1828
+BPR (implicit)	820	0.1544	0.4985
+
+Key observations:
+
+Explicit MF significantly reduced training RMSE but underperformed the popularity baseline on ranking metrics
+
+Implicit MF (BPR) more than doubled Precision@10 and Recall@10 compared to popularity
+
+Aligning the training objective with ranking metrics is critical for recommender performance
+
+Key Lessons Learned
+
+Strong baselines are hard to beat in sparse recommendation settings
+
+Lower RMSE does not guarantee better recommendations
+
+Evaluation design (time splits, candidate sampling) strongly affects conclusions
+
+Implicit-feedback objectives are often better suited for top-K recommendation tasks than explicit rating prediction
+
+How to Run
+# Create environment
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+
+# Compare all models
+python -m src.evaluation.compare_all_models
+
 
 
 
